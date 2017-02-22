@@ -6,8 +6,6 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#define HEAPSIZE 0x400
-
 caddr_t
 _sbrk(int incr)
 {
@@ -26,7 +24,7 @@ _sbrk(int incr)
     // word boundary, hence make sure we always add a multiple of
     // 4 to it.
     incr = (incr + 3) & (~3); // align value to 4
-    if (current_heap_end + incr > &_end + HEAPSIZE)
+    if (current_heap_end + incr > &_end + HEAP_SIZE)
     {
         // Some of the libstdc++-v3 tests rely upon detecting
         // out of memory errors, so do not abort here.

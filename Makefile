@@ -4,6 +4,7 @@
 PROJECT = blinky
 CMSIS_PATH ?= ~/programming/microcontroller/stm32/ARM/STM32Cube_FW_F7_V1.6.0
 OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
+HEAP_SIZE = 0x400
 
 ################
 # Sources
@@ -58,18 +59,19 @@ MCUFLAGS = -mcpu=cortex-m7 -mlittle-endian
 MCUFLAGS += -mfloat-abi=hard -mfpu=fpv5-sp-d16
 MCUFLAGS += -mthumb
 
-DEBUGFLAGS = -O0 -g -gdwarf-2
-#DEBUGFLAGS = -O2
+DEBUG_OPTIMIZE_FLAGS = -O0 -g -gdwarf-2
+#DEBUG_OPTIMIZE_FLAGS = -O2
 
 CFLAGS = -std=c11
 CFLAGS += -Wall -Wextra --pedantic
 # generate listing files
 CFLAGS += -Wa,-aghlms=$(<:%.c=%.lst)
+CFLAGS += -DHEAP_SIZE=$(HEAP_SIZE)
 
 CFLAGS_EXTRA = -nostartfiles -nodefaultlibs -nostdlib
 CFLAGS_EXTRA += -fdata-sections -ffunction-sections
 
-CFLAGS += $(DEFINES) $(MCUFLAGS) $(DEBUG_FLAGS) $(CFLAGS_EXTRA) $(INCLUDES)
+CFLAGS += $(DEFINES) $(MCUFLAGS) $(DEBUG_OPTIMIZE_FLAGS) $(CFLAGS_EXTRA) $(INCLUDES)
 
 LDFLAGS = -static $(MCUFLAGS)
 LDFLAGS += -Wl,--start-group -lgcc -lm -lc -lg -lstdc++ -lsupc++ -Wl,--end-group
