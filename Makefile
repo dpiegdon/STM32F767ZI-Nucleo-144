@@ -2,8 +2,8 @@
 # Makefile for STM32F767 NUCLEO144 board projects
 
 PROJECT = blinky
-CMSIS_PATH = ~/programming/microcontroller/stm32/ARM/STM32Cube_FW_F7_V1.6.0
-OPENOCD_SCRIPT_DIR=/usr/share/openocd/scripts
+CMSIS_PATH ?= ~/programming/microcontroller/stm32/ARM/STM32Cube_FW_F7_V1.6.0
+OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
 
 ################
 # Sources
