@@ -50,3 +50,4 @@ long _lseek(int fd, long offset, int origin)
 void _exit(int status)
 {
 }
+

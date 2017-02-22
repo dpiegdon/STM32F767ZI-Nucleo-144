@@ -12,3 +12,4 @@ int __io_getchar(void)
 {
     return ITM_ReceiveChar();
 }
+
