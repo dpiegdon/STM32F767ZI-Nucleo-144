@@ -103,10 +103,6 @@ gdb-server:
 
 gdb: $(PROJECT).elf
 	$(GDB) --eval-command="target extended-remote localhost:$(GDB_PORT)" --eval-command="monitor halt" $(PROJECT).elf
-	# usefull commands in gdb:
-	#   load   => load elf file into device, i.e. flash and start app via gdb
-	#   kill   => stop execution of application
-	#   run    => start application again
 
 ################
 # dependency graphs for wildcard rules
