@@ -2,7 +2,7 @@
 # Makefile for STM32F767 NUCLEO144 board projects
 
 PROJECT = blinky
-CMSIS_PATH ?= ~/programming/microcontroller/stm32/ARM/STM32Cube_FW_F7_V1.6.0
+CMSIS_PATH ?= STM32Cube_FW_F7
 OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
 HEAP_SIZE = 0x400
 
@@ -81,9 +81,9 @@ LDFLAGS += -L ${CMSIS_PATH}/Projects/STM32F767ZI-Nucleo/Demonstrations/SW4STM32/
 ################
 # phony rules
 
-.PHONY: all clean flash erase
+.PHONY: all clean flash erase check_cube_exists
 
-all: $(PROJECT).bin $(PROJECT).hex $(PROJECT).asm
+all: check_cube_exists $(PROJECT).bin $(PROJECT).hex $(PROJECT).asm
 
 clean:
 	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex $(PROJECT).map $(PROJECT).asm
@@ -93,6 +93,9 @@ flash: $(PROJECT).bin
 
 erase:
 	st-flash erase
+
+check_cube_exists:
+	if ! test -e ${CMSIS_PATH}; then echo 'please download and extract or symlink the STM32-CUBE-F7 pack (>= 1.6.0) to ${CMSIS_PATH}'; false; fi
 
 GDB_PORT:=4242
 gdb-server:
