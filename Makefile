@@ -4,19 +4,84 @@
 PROJECT = blinky
 CMSIS_PATH ?= STM32Cube_FW_F7
 OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
-HEAP_SIZE = 0x400
+HEAP_SIZE = 0x1000
 
 ################
 # Sources
 
 SOURCES_S = ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/gcc/startup_stm32f767xx.s
 
-SOURCES_C = src/main.c
+SOURCES_C = src/app_ethernet.c src/ethernetif.c src/httpserver-netconn.c src/main.c src/stm32f7xx_hal_timebase_tim.c src/stm32f7xx_it.c src/system_stm32f7xx.c
 
 SOURCES_C += sys/stubs.c sys/_sbrk.c sys/_io.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/system_stm32f7xx.c
 SOURCES_C += ${CMSIS_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_cortex.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_dma2d.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_dma.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_dsi.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_eth.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_flash_ex.c
 SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_i2c.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_i2c_ex.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_ltdc.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_ltdc_ex.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_pwr_ex.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_rcc_ex.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_sdram.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_tim_ex.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_uart.c
+SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_ll_fmc.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/croutine.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/list.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1/port.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/queue.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/tasks.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/timers.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/api_lib.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/api_msg.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/err.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/netbuf.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/netdb.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/netifapi.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/sockets.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/api/tcpip.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/apps/httpd/fs.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/apps/httpd/httpd.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/def.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/dns.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/inet_chksum.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/init.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ip.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/autoip.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/dhcp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/etharp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/icmp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/igmp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_addr.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/ipv4/ip4_frag.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/mem.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/memp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/netif.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/pbuf.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/raw.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/stats.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/sys.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/tcp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/tcp_in.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/tcp_out.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/timeouts.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/core/udp.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/netif/ethernet.c
+SOURCES_C += ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/system/OS/sys_arch.c
 
 SOURCES_CPP =
 
@@ -27,12 +92,18 @@ OBJS = $(SOURCES_S:.s=.o) $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 # Includes and Defines
 
 INCLUDES += -I src
-INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Include
-INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Include
+INCLUDES += -I ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/include
+INCLUDES += -I ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/system
 INCLUDES += -I ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Inc
+INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Include
+INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Include
 INCLUDES += -I ${CMSIS_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144
+INCLUDES += -I ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
+INCLUDES += -I ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/include
+INCLUDES += -I ${CMSIS_PATH}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM7/r0p1
+INCLUDES += -I ${CMSIS_PATH}/Middlewares/Third_Party/LwIP/src/apps/httpd
 
-DEFINES = -DSTM32 -DSTM32F7 -DSTM32F767xx
+DEFINES = -DSTM32 -DSTM32F7 -DSTM32F767xx -DHTTPD_USE_CUSTOM_FSDATA=1
 
 ################
 # Compiler/Assembler/Linker/etc
