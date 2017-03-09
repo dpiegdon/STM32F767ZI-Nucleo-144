@@ -4,6 +4,7 @@ STM32Cube_FW_F7
 .*.swp
 *.o
 *.lst
+*.su
 *.map
 *.elf
 *.bin
