@@ -138,6 +138,7 @@ CFLAGS += -Wall -Wextra --pedantic
 # generate listing files
 CFLAGS += -Wa,-aghlms=$(<:%.c=%.lst)
 CFLAGS += -DHEAP_SIZE=$(HEAP_SIZE)
+CFLAGS += -fstack-usage
 
 CFLAGS_EXTRA = -nostartfiles -nodefaultlibs -nostdlib
 CFLAGS_EXTRA += -fdata-sections -ffunction-sections
@@ -157,7 +158,7 @@ LDFLAGS += -L ${CMSIS_PATH}/Projects/STM32F767ZI-Nucleo/Demonstrations/SW4STM32/
 all: check_cube_exists $(PROJECT).bin $(PROJECT).hex $(PROJECT).asm
 
 clean:
-	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex $(PROJECT).map $(PROJECT).asm
+	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(OBJS:$.o=$.su) $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex $(PROJECT).map $(PROJECT).asm
 
 flash: $(PROJECT).bin
 	st-flash write $(PROJECT).bin 0x08000000
