@@ -1,43 +1,59 @@
 #######################################################################
-# Makefile for STM32F767 NUCLEO144 board projects
+# Generic Makefile for STM32 MCU projects
 
-PROJECT = blinky
-CMSIS_PATH ?= STM32Cube_FW_F7
-OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
-HEAP_SIZE = 0x400
+# XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
+# XXX     this generic Makefile should not require any    XXX
+# XXX changes. all your changes should go into project.mk XXX
+# XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX XXX
 
 ################
-# Sources
+# Import specific settings
 
-SOURCES_S = ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/gcc/startup_stm32f767xx.s
+# load host-specifics
+include host.mk
 
-SOURCES_C = src/main.c
+# load hardware-specifics
+include hardware.mk
 
-SOURCES_C += sys/stubs.c sys/_sbrk.c sys/_io.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/system_stm32f7xx.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c
+# load project-specifics
+include project.mk
 
-SOURCES_CPP =
+# these includes are expected to setup all
+# MCU, BSP, HOST and project-specific settings.
+
+# these are in specific:
+
+#MCU_DEFINES MCU_CFLAGS MCU_LDFLAGS
+
+#BSP_DEFINES BSP_CFLAGS BSP_LDFLAGS
+#BSP_CMSIS_PATH BSP_CMSIS_DESCRIPTIONS
+#BSP_TARGET_ADDRESS BSP_TARGET_OPENOCD_FLAGS
+
+#PROJECT_NAME
+#PROJECT_DEFINES PROJECT_CFLAGS PROJECT_LDFLAGS
+#PROJECT_SOURCES_S PROJECT_SOURCES_C PROJECT_SOURCES_CPP PROJECT_INCLUDES 
+
+#PREFER_STLINK (set to 0 or 1)
+
+# also it may override the following:
+
+#PREFIX OPENOCD_SCRIPT_DIR DEBUG_OPTIMIZE_FLAGS
+
+################
+# Collect sources and target files
+
+SOURCES_S = $(PROJECT_SOURCES_S)
+SOURCES_C = $(PROJECT_SOURCES_C)
+SOURCES_CPP = $(PROJECT_SOURCES_CPP)
+INCLUDES = $(PROJECT_INCLUDES)
 
 SOURCES = $(SOURCES_S) $(SOURCES_C) $(SOURCES_CPP)
 OBJS = $(SOURCES_S:.s=.o) $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 
 ################
-# Includes and Defines
+# Generic binaries and paths
 
-INCLUDES += -I src
-INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Include
-INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Include
-INCLUDES += -I ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Inc
-INCLUDES += -I ${CMSIS_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144
-
-DEFINES = -DSTM32 -DSTM32F7 -DSTM32F767xx
-
-################
-# Compiler/Assembler/Linker/etc
-
-PREFIX = arm-none-eabi
+PREFIX ?= arm-none-eabi
 
 CC = $(PREFIX)-gcc
 AS = $(PREFIX)-as
@@ -50,71 +66,67 @@ READELF = $(PREFIX)-readelf
 SIZE = $(PREFIX)-size
 GDB = $(PREFIX)-gdb
 RM = rm -f
+STLINK_UTIL=st-util
 OPENOCD=openocd
+OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
 
 ################
-# Compiler options
+# Generic toolchain options
 
-MCUFLAGS = -mcpu=cortex-m7 -mlittle-endian
-MCUFLAGS += -mfloat-abi=hard -mfpu=fpv5-sp-d16
-MCUFLAGS += -mthumb
+#DEBUG_OPTIMIZE_FLAGS ?= -O2
+DEBUG_OPTIMIZE_FLAGS ?= -O0 -g -gdwarf-2
 
-DEBUG_OPTIMIZE_FLAGS = -O0 -g -gdwarf-2
-#DEBUG_OPTIMIZE_FLAGS = -O2
+LOWFOOTPRINT_FLAGS := -nostartfiles -nodefaultlibs -nostdlib -fdata-sections -ffunction-sections
 
-CFLAGS = -std=c11
-CFLAGS += -Wall -Wextra --pedantic
-# generate listing files
-CFLAGS += -Wa,-aghlms=$(<:%.c=%.lst)
-CFLAGS += -DHEAP_SIZE=$(HEAP_SIZE)
-CFLAGS += -fstack-usage
+CFLAGS = -std=c11 -Wall -Wextra --pedantic -Wa,-aghlms=$(<:%.c=%.lst) -fstack-usage
+CFLAGS += $(DEBUG_OPTIMIZE_FLAGS) $(LOWFOOTPRINT_FLAGS)
+CFLAGS += $(MCU_CFLAGS) $(BSP_CFLAGS) $(PROJECT_CFLAGS)
+CFLAGS += $(MCU_DEFINES) $(BSP_DEFINES) $(PROJECT_DEFINES)
+CFLAGS += $(INCLUDES)
 
-CFLAGS_EXTRA = -nostartfiles -nodefaultlibs -nostdlib
-CFLAGS_EXTRA += -fdata-sections -ffunction-sections
-
-CFLAGS += $(DEFINES) $(MCUFLAGS) $(DEBUG_OPTIMIZE_FLAGS) $(CFLAGS_EXTRA) $(INCLUDES)
-
-LDFLAGS = -static $(MCUFLAGS)
+LDFLAGS = -static
 LDFLAGS += -Wl,--start-group -lgcc -lm -lc -lg -lstdc++ -lsupc++ -Wl,--end-group
 LDFLAGS += -Wl,--gc-sections -Wl,--print-gc-sections -Wl,--cref,-Map=$(@:%.elf=%.map)
-LDFLAGS += -L ${CMSIS_PATH}/Projects/STM32F767ZI-Nucleo/Demonstrations/SW4STM32/STM32767ZI_Nucleo/ -T STM32F767ZITx_FLASH.ld
+LDFLAGS += $(MCU_LDFLAGS) $(BSP_LDFLAGS) $(PROJECT_LDFLAGS)
 
 ################
-# phony rules
+# Phony rules
 
 .PHONY: all clean flash erase check_cube_exists
 
-all: check_cube_exists $(PROJECT).bin $(PROJECT).hex $(PROJECT).asm
+all: check_cube_exists $(PROJECT_NAME).bin $(PROJECT_NAME).hex $(PROJECT_NAME).asm
 
 clean:
-	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(OBJS:$.o=$.su) $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex $(PROJECT).map $(PROJECT).asm
+	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(OBJS:$.o=$.su) $(PROJECT_NAME).elf $(PROJECT_NAME).bin $(PROJECT_NAME).hex $(PROJECT_NAME).map $(PROJECT_NAME).asm
 
-flash: $(PROJECT).bin
-	st-flash write $(PROJECT).bin 0x08000000
+flash: $(PROJECT_NAME).bin
+	st-flash write $(PROJECT_NAME).bin $(BSP_TARGET_ADDRESS)
 
 erase:
 	st-flash erase
 
 check_cube_exists:
-	if ! test -e ${CMSIS_PATH}; then echo 'please download and extract or symlink the STM32-CUBE-F7 pack (>= 1.6.0) to ${CMSIS_PATH}'; false; fi
+	@if ! test -e $(BSP_CMSIS_PATH); then echo 'please download and extract or symlink $(BSP_CMSIS_DESCRIPTIONS) to $(BSP_CMSIS_PATH)'; false; fi
 
-GDB_PORT:=4242
 gdb-server:
-	# st-util will listen on port :4242
-	st-util
+ifeq ($(PREFER_STLINK),1)
+	# st-util will listen on port :3333 (default was 4242)
+	$(STLINK_UTIL) -p 3333
+else
 	# openocd will listen on port :3333
-	#$(OPENOCD) -f $(OPENOCD_SCRIPT_DIR)/interface/stlink-v2-1.cfg -f $(OPENOCD_SCRIPT_DIR)/target/stm32f7x.cfg
+	$(OPENOCD) -s $(OPENOCD_SCRIPT_DIR) $(BSP_TARGET_OPENOCD_FLAGS)
+endif
 
-gdb: $(PROJECT).elf
-	$(GDB) --eval-command="target extended-remote localhost:$(GDB_PORT)" --eval-command="monitor halt" $(PROJECT).elf
-
-################
-# dependency graphs for wildcard rules
-
-$(PROJECT).elf: $(OBJS)
+gdb: $(PROJECT_NAME).elf
+	$(GDB) --eval-command="target extended-remote localhost:3333" --eval-command="monitor halt" $(PROJECT_NAME).elf
 
 ################
-# wildcard rules
+# Dependency graphs for wildcard rules
+
+$(PROJECT_NAME).elf: $(OBJS)
+
+################
+# Wildcard rules
 
 %.elf:
 	$(LD) $(OBJS) $(LDFLAGS) -o $@
@@ -129,4 +141,5 @@ $(PROJECT).elf: $(OBJS)
 %.asm: %.elf
 	$(OBJDUMP) -dgCxw $< > $@
 
+#######################################################################
 # EOF
