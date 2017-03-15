@@ -67,6 +67,7 @@ SIZE = $(PREFIX)-size
 GDB = $(PREFIX)-gdb
 RM = rm -f
 STLINK_UTIL=st-util
+STLINK_FLASH=st-flash
 OPENOCD=openocd
 OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
 
@@ -99,19 +100,29 @@ all: check_cube_exists $(PROJECT_NAME).bin $(PROJECT_NAME).hex $(PROJECT_NAME).a
 clean:
 	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(OBJS:$.o=$.su) $(PROJECT_NAME).elf $(PROJECT_NAME).bin $(PROJECT_NAME).hex $(PROJECT_NAME).map $(PROJECT_NAME).asm
 
-flash: $(PROJECT_NAME).bin
-	st-flash write $(PROJECT_NAME).bin $(BSP_TARGET_ADDRESS)
-
-erase:
-	st-flash erase
-
 check_cube_exists:
 	@if ! test -e $(BSP_CMSIS_PATH); then echo 'please download and extract or symlink $(BSP_CMSIS_DESCRIPTIONS) to $(BSP_CMSIS_PATH)'; false; fi
+
+flash: $(PROJECT_NAME).bin
+ifeq ($(PREFER_STLINK),1)
+	$(STLINK_FLASH) --reset write $(PROJECT_NAME).bin $(BSP_TARGET_ADDRESS)
+else
+	$(OPENOCD) -s $(OPENOCD_SCRIPT_DIR) $(BSP_TARGET_OPENOCD_FLAGS) --command "program $(PROJECT_NAME).bin verify reset exit 0x08000000"
+endif
+
+erase:
+ifeq ($(PREFER_STLINK),1)
+	$(STLINK_FLASH) erase
+else
+	# FIXME this does not work:
+	#$(OPENOCD) -s $(OPENOCD_SCRIPT_DIR) $(BSP_TARGET_OPENOCD_FLAGS) --command "halt ; flash erase_address unlock 0x08000000 0x00010000"
+	@echo sorry erasing is currently not supported using the openocd backend.
+endif
 
 gdb-server:
 ifeq ($(PREFER_STLINK),1)
 	# st-util will listen on port :3333 (default was 4242)
-	$(STLINK_UTIL) -p 3333
+	$(STLINK_UTIL) -p 3333 --multi --no-reset --verbose
 else
 	# openocd will listen on port :3333
 	$(OPENOCD) -s $(OPENOCD_SCRIPT_DIR) $(BSP_TARGET_OPENOCD_FLAGS)
@@ -119,6 +130,7 @@ endif
 
 gdb: $(PROJECT_NAME).elf
 	$(GDB) --eval-command="target extended-remote localhost:3333" --eval-command="monitor halt" $(PROJECT_NAME).elf
+	@echo NOTE this has only deleted the first 64 K of flash.
 
 ################
 # Dependency graphs for wildcard rules
