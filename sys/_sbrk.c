@@ -6,10 +6,10 @@
 #include <sys/types.h>
 #include <errno.h>
 
+extern char _end; /* Defined in linker script to be the start of the heap */
+
 caddr_t _sbrk(int incr)
 {
-	extern char _end; /* Defined by the linker. */
-	//extern char _Heap_Limit; /* Defined by the linker. */
 	static char* current_heap_end;
 	char* current_block_address;
 
@@ -25,19 +25,9 @@ caddr_t _sbrk(int incr)
 	incr = (incr + 3) & (~3); // align value to 4
 	if (current_heap_end + incr > &_end + HEAP_SIZE)
 	{
-		// Some of the libstdc++-v3 tests rely upon detecting
-		// out of memory errors, so do not abort here.
-#if 0
-		extern void abort (void);
-
-		_write (1, "_sbrk: Heap and stack collision\n", 32);
-
-		abort ();
-#else
-		// Heap has overflowed
+		// No more heap available
 		errno = ENOMEM;
 		return (caddr_t) - 1;
-#endif
 	}
 
 	current_heap_end += incr;
