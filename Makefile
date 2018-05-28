@@ -75,7 +75,7 @@ OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
 # Generic toolchain options
 
 #DEBUG_OPTIMIZE_FLAGS ?= -O2
-DEBUG_OPTIMIZE_FLAGS ?= -O0 -g -gdwarf-2
+DEBUG_OPTIMIZE_FLAGS ?= -O0 -g -gdwarf-5
 
 LOWFOOTPRINT_FLAGS := -nostartfiles -nodefaultlibs -nostdlib -fdata-sections -ffunction-sections
 
