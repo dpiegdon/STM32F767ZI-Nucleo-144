@@ -127,6 +127,6 @@ $(PROJECT).elf: $(OBJS)
 	$(OBJCOPY) -O ihex $< $@
 
 %.asm: %.elf
-	$(OBJDUMP) -dgCxw $< > $@
+	$(OBJDUMP) -dgCxwsSh --show-raw-insn $< > $@
 
 # EOF
