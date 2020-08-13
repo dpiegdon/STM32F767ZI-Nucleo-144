@@ -1,22 +1,22 @@
 #######################################################################
-# Makefile for STM32F767 NUCLEO144 board projects
+# Makefile for STM32F767ZI Nucleo projects
 
-PROJECT = blinky
-CMSIS_PATH ?= STM32Cube_FW_F7
-OPENOCD_SCRIPT_DIR ?= /usr/share/openocd/scripts
-HEAP_SIZE = 0x400
+PROJECT = main
+CUBE_PATH ?= STM32CubeF7
+HEAP_SIZE = 0x100
+FLASH_OFFSET=0x08000000
 
 ################
 # Sources
 
-SOURCES_S = ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/gcc/startup_stm32f767xx.s
+SOURCES_S = ${CUBE_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/gcc/startup_stm32f767xx.s
 
 SOURCES_C = src/main.c
 
-SOURCES_C += sys/stubs.c sys/_sbrk.c sys/_io.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/system_stm32f7xx.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.c
-SOURCES_C += ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c
+SOURCES_C += sys/stubs.c sys/_sbrk.c
+SOURCES_C += ${CUBE_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Source/Templates/system_stm32f7xx.c
+SOURCES_C += ${CUBE_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144/stm32f7xx_nucleo_144.c
+SOURCES_C += ${CUBE_PATH}/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal_gpio.c
 
 SOURCES_CPP =
 
@@ -27,10 +27,10 @@ OBJS = $(SOURCES_S:.s=.o) $(SOURCES_C:.c=.o) $(SOURCES_CPP:.cpp=.o)
 # Includes and Defines
 
 INCLUDES += -I src
-INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Include
-INCLUDES += -I ${CMSIS_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Include
-INCLUDES += -I ${CMSIS_PATH}/Drivers/STM32F7xx_HAL_Driver/Inc
-INCLUDES += -I ${CMSIS_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144
+INCLUDES += -I ${CUBE_PATH}/Drivers/CMSIS/Include
+INCLUDES += -I ${CUBE_PATH}/Drivers/CMSIS/Device/ST/STM32F7xx/Include
+INCLUDES += -I ${CUBE_PATH}/Drivers/STM32F7xx_HAL_Driver/Inc
+INCLUDES += -I ${CUBE_PATH}/Drivers/BSP/STM32F7xx_Nucleo_144
 
 DEFINES = -DSTM32 -DSTM32F7 -DSTM32F767xx
 
@@ -50,7 +50,6 @@ READELF = $(PREFIX)-readelf
 SIZE = $(PREFIX)-size
 GDB = $(PREFIX)-gdb
 RM = rm -f
-OPENOCD=openocd
 
 ################
 # Compiler options
@@ -59,7 +58,7 @@ MCUFLAGS = -mcpu=cortex-m7 -mlittle-endian
 MCUFLAGS += -mfloat-abi=hard -mfpu=fpv5-sp-d16
 MCUFLAGS += -mthumb
 
-DEBUG_OPTIMIZE_FLAGS = -O0 -g -gdwarf-5
+DEBUG_OPTIMIZE_FLAGS = -O0 -g -ggdb3
 #DEBUG_OPTIMIZE_FLAGS = -O2
 
 CFLAGS = -std=c11
@@ -77,36 +76,45 @@ CFLAGS += $(DEFINES) $(MCUFLAGS) $(DEBUG_OPTIMIZE_FLAGS) $(CFLAGS_EXTRA) $(INCLU
 LDFLAGS = -static $(MCUFLAGS)
 LDFLAGS += -Wl,--start-group -lgcc -lm -lc -lg -lstdc++ -lsupc++ -Wl,--end-group
 LDFLAGS += -Wl,--gc-sections -Wl,--print-gc-sections -Wl,--cref,-Map=$(@:%.elf=%.map)
-LDFLAGS += -L ${CMSIS_PATH}/Projects/STM32F767ZI-Nucleo/Demonstrations/SW4STM32/STM32767ZI_Nucleo/ -T STM32F767ZITx_FLASH.ld
+LDFLAGS += -Wl,--print-memory-usage
+LDFLAGS += -L ${CUBE_PATH}/Projects/STM32F767ZI-Nucleo/Demonstrations/SW4STM32/STM32767ZI_Nucleo/ -T STM32F767ZITx_FLASH.ld
 
 ################
 # phony rules
 
-.PHONY: all clean flash erase check_cube_exists
+.PHONY: all clean flash erase
 
-all: check_cube_exists $(PROJECT).bin $(PROJECT).hex $(PROJECT).asm
+all: $(PROJECT).bin $(PROJECT).hex $(PROJECT).asm
 
 clean:
 	$(RM) $(OBJS) $(OBJS:$.o=$.lst) $(OBJS:$.o=$.su) $(PROJECT).elf $(PROJECT).bin $(PROJECT).hex $(PROJECT).map $(PROJECT).asm
 
-flash: $(PROJECT).bin
-	st-flash write $(PROJECT).bin 0x08000000
+BMP_DEVICE ?= /dev/ttyACM0
+JLINK_CPUNAME ?= STM32F737ZI
+flash-bmp: $(PROJECT).elf
+	# assuming:
+	#  * Black Magic Probe connected to $(BMP_DEVICE)
+	#  * compatible board connected via SWD
+	$(GDB) $(PROJECT).elf \
+		-ex 'set confirm off' \
+		-ex 'target extended-remote $(BMP_DEVICE)' \
+		-ex 'mon hard_srst' \
+		-ex 'mon swdp_scan' \
+		-ex 'attach 1' \
+		-ex 'load' \
+		-ex 'compare-sections' \
+		-ex 'quit'
 
-erase:
-	st-flash erase
+flash-jlink: $(PROJECT).bin
+	# assuming:
+	#  * any type of Segger JLINK that is usable with an STM32
+	#    (e.g. the embedded jlink on the DK)
+	#  * compatible board connected via SWD
+	#  * installed JLink Software
+	printf "erase\nloadfile $< ${FLASH_OFFSET}\nr\nq\n" | JLinkExe -nogui 1 -autoconnect 1 -device $(JLINK_CPUNAME) -if swd -speed 4000
 
-check_cube_exists:
-	if ! test -e ${CMSIS_PATH}; then echo 'please download and extract or symlink the STM32-CUBE-F7 pack (>= 1.6.0) to ${CMSIS_PATH}'; false; fi
-
-GDB_PORT:=4242
-gdb-server:
-	# st-util will listen on port :4242
-	st-util
-	# openocd will listen on port :3333
-	#$(OPENOCD) -f $(OPENOCD_SCRIPT_DIR)/interface/stlink-v2-1.cfg -f $(OPENOCD_SCRIPT_DIR)/target/stm32f7x.cfg
-
-gdb: $(PROJECT).elf
-	$(GDB) --eval-command="target extended-remote localhost:$(GDB_PORT)" --eval-command="monitor halt" $(PROJECT).elf
+erase-jlink:
+	printf "erase\nr\nq\n" | JLinkExe -nogui 1 -autoconnect 1 -device $(JLINK_CPUNAME) -if swd -speed 4000
 
 ################
 # dependency graphs for wildcard rules
